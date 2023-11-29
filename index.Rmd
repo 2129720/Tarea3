@@ -1,0 +1,191 @@
+---
+title: "AFDMD-111 Estadística"
+subtitle: "Lectura de archivos en R"
+author: "Jose Darwin Tinoco Montejo"
+date: "20/09/2023"
+output:
+  rmdformats::material:
+    highlight: kate
+    cards: false
+---
+
+
+```{r knitr_init, echo=FALSE, message=TRUE, cache=FALSE, warnings=F}
+library(knitr)
+library(rmdformats)
+
+## Global options
+options(max.print="75")
+opts_chunk$set(echo=TRUE,
+	             cache=TRUE,
+               prompt=FALSE,
+               tidy=TRUE,
+               comment=NA,
+               message=FALSE,
+               warning=FALSE)
+opts_knit$set(width=75)
+```
+
+# Lectura de archivos en R
+
+`R` puede leer una gran cantidad de archivos incluyendo archivos `.txt`, `.csv`, `.xls`, `.pdf`, etc. Mediante el uso del paquete `tabulizer` se pueden leer tablas que se encuentran en documentos `PDF`. En la siguiente actividad se instalará y cargará el paquete `tabulizer` mediante los comandos:
+
+```{r eval=FALSE}
+install.packages("tabulizer", dependencies = TRUE)   # Instala tabulizer
+library(tabulizer)                                   # Carga tabulizer
+
+```
+
+Posteriormente se leerá la tabla localizada en el archivo `seccion_calificacionesmsosa247.pdf` que se encuentra en la sección de **archivos** del *Teams* (lo anterior se puede hacer mediante el comando `extract_tables` del tabulizer). Una vez cargada la tabla que se llamará `tablaAlumnos` se realizarán las siguientes actividades:
+
+```{r}
+library(tabulizer)
+library(DT)
+tabla <- extract_tables("seccion_calificacionesmsosa247.pdf", output = "data.frame")
+tabladf <- as.data.frame(tabla)
+datatable(tabladf)
+```
+
+1.- Graficar `No` contra `Parcial 1`.
+
+```{r}
+no <- tabladf$No
+parcial1 <- tabladf$Parcial
+plot(no, parcial1, type = "l")
+```
+
+2.- Graficar `No` contra `Parcial 2`.
+
+```{r}
+parcial2 <- tabladf$Parcial.1
+plot(no, parcial2, type = "l")
+```
+
+3.- Renombrar `Ev.` a `Parcial 3` (mostrar el `data.frame` resultante).
+
+```{r}
+colnames(tabladf)[4:6] <- c("Parcial1", "Parcial2", "Parcial3")
+datatable(tabladf)
+
+```
+
+4.- Graficar `No` contra `Parcial 1`, `Parcial 2`.
+
+```{r}
+plot(no, parcial1, type = "l", col = "blue")
+lines(no, parcial2, type = "l", col = "red")
+legend("topright", legend = c("Parcia1", "Parcial2"), col = c("blue", "red"), pch = c(1, 1))
+```
+
+5.- ¿Cuál es la media de las calificaciones finales? ¿Quién obtuvo la calificación más baja? ¿Quién obtuvo el mejor promedio? (anexar el código que lo calcula).
+
+La media de calificación es:
+
+```{r}
+media <- mean(tabladf$Calif.)
+media
+```
+Las personas que obtuvieron las calificaciones más bajas son:
+```{r}
+min <- which(tabladf$Calif. == min(tabladf$Calif.))
+nombres_min <- tabladf$Nombre[min]
+nombres_min
+```
+Las personas que obtuvieron las calificaciones más altas son:
+```{r}
+max <- which(tabladf$Calif. == max(tabladf$Calif.))
+nombres_max <- tabladf$Nombre[max]
+nombres_max
+```
+
+6.- Cree una nueva columna llamada `promedio` (esto lo puede hacer con `mutate` del paquete `dplyr`) y compárela con la columna `Calif.` (¿Qué se puede observar?).
+
+```{r}
+library(dplyr)
+promedio <- rowMeans(tabladf[, c("Parcial1", "Parcial2", "Parcial3")])
+tabladf <- mutate(tabladf, Promedio = promedio)
+datatable(tabladf)
+```
+
+Se puede observar que, la columna "Calif." también calcula el promedio de los tres parciales, sin embargo, redondean los decimales, a comparación de la nueva columna que agregamos, en donde NO se redondean los decimales
+
+Posteriormente lea el archivo `it0103_2016_01.csv` (lo puede hacer mediante el comando `read.csv()`) el cual es una versión `sucia` del archivo anterior y replique cada uno de los puntos de arriba (sí es necesario modifique el data.frame resultante).
+
+```{r}
+excel <- read.csv("it0103_2016_01.csv")
+exceldf <- as.data.frame(excel)
+datatable(exceldf)
+excelno <- exceldf$No[1:24]
+excelmatricula <- exceldf$Matricula[1:24]
+excelnombre <- exceldf$Nombre[1:24]
+excelparcial1 <- exceldf$Calificacion[1:24]
+excelparcial2 <- exceldf$Calificacion[25:48]
+excelparcial3 <- exceldf$Calificacion[49:72]
+excelcalif. <- exceldf$Calif.[1:24]
+```
+
+
+1.- Graficar `No` contra `Parcial 1`.
+
+```{r}
+plot(excelno, excelparcial1, type = "l")
+```
+
+2.- Graficar `No` contra `Parcial 2`.
+
+```{r}
+plot(excelno, excelparcial2, type = "l")
+```
+
+3.- Renombrar `Ev.` a `Parcial 3` (mostrar el `data.frame` resultante).
+
+```{r}
+exceldf <- data.frame(
+  No = excelno,
+  Matricula = excelmatricula,
+  Nombre = excelnombre,
+  Parcial1 = excelparcial1,
+  Parcial2 = excelparcial2,
+  Parcial3 = excelparcial3,
+  Calif. = excelcalif.
+  )
+  datatable(exceldf)
+```
+
+4.- Graficar `No` contra `Parcial 1`, `Parcial 2`.
+
+```{r}
+plot(excelno, excelparcial1, type = "l", col = "blue")
+lines(excelno, excelparcial2, type = "l", col = "red")
+legend("topright", legend = c("Parcia1", "Parcial2"), col = c("blue", "red"), pch = c(1, 1))
+```
+
+5.- ¿Cuál es la media de las calificaciones finales? ¿Quién obtuvo la calificación más baja? ¿Quién obtuvo el mejor promedio? (anexar el código que lo calcula).
+
+La media de calificación es:
+
+```{r}
+excelmedia <- mean(exceldf$Calif.)
+excelmedia
+```
+Las personas que obtuvieron las calificaciones más bajas son:
+```{r}
+excelmin <- which(exceldf$Calif. == min(exceldf$Calif.))
+excelnombres_min <- exceldf$Nombre[min]
+excelnombres_min
+```
+Las personas que obtuvieron las calificaciones más altas son:
+```{r}
+excelmax <- which(exceldf$Calif. == max(exceldf$Calif.))
+excelnombres_max <- exceldf$Nombre[max]
+excelnombres_max
+```
+
+
+6.- Cree una nueva columna llamada `promedio` (esto lo puede hacer con `mutate` del paquete `dplyr`) y compárela con la columna `Calif.` 
+
+```{r}
+excelpromedio <- rowMeans(exceldf[, c("Parcial1", "Parcial2", "Parcial3")])
+exceldf <- mutate(exceldf, Promedio = excelpromedio)
+datatable(exceldf)
+```
